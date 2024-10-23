@@ -1,5 +1,8 @@
 # Simplicial Ratio
-Compute simplicial ratio and simplicial matrix of a hypergraph as described in https://arxiv.org/abs/2408.11806
+Compute simplicial ratio and simplicial matrix of a hypergraph as described in: 
+
+*Counting simplicial pairs in hypergraphs*, Jordan Barrett, Paweł Prałat, Aaron Smith and François Théberge,
+arXiv preprint: https://arxiv.org/abs/2408.11806.
 
 ## Simpliciality
 
