@@ -10,6 +10,7 @@ We define a **simplicial pair** of edges as two edges of different size where on
 In https://arxiv.org/abs/2408.11806, we propose a measure where we compute how **surprisingly simplicial** a given hypergraph is when compared to a null model. 
 To do so, we define the **simplicial ratio**, which summarises this surprise with a single number by comparing the observed and expected number of simplicial pairs of each sizes.
 A simplicial ratio of 1 indicates that the hypergraph has the same simpliciality as the null model, while a value above 1 indicates that the hypergraph is "more simplicial" than expected (and vice-versa for a value below 1).
+Note that **sampling** is used when computing the simplicial ratio, so results can vary a little. The sample size can be set by the user.
 
 It can also be useful to look at the matrix **simplicial counts**, where we compute the number of simplicial pairs separately for every pair of edge sizes, as well as the **simplicial matrix**, where we compute the simplicial ratio separately for each pair of edge sizes present in the hypergraph.
 
@@ -18,7 +19,18 @@ The code to compute those new measure can be found in the **simplicial_ratio.py*
 ### Example
 
 ```
-code here - TBD
+import numpy as np
+import xgi
+import simplicial as SR
+
+H = xgi.load_xgi_data('contact-high-school')
+## build edge list - remove duplicates and keep size < 12 only
+E = list(set([tuple(sorted(e)) for e in H.edges.members() if len(e)<=11 and len(e)>=2])) ## keep only edges of size 2 to 11
+E = [set(e) for e in E]
+
+## Simplicial ratio
+S = SR.Simplicial(E)
+print('SR: %.2f'%S.ratio)
 ```
 
 Looking at three **contact hypergraphs** used in the papers cited above, we see that the measures reveal different aspects of the data. 
