@@ -22,11 +22,10 @@ The code to compute those new measure can be found in the **simplicial_ratio.py*
 import numpy as np
 import xgi
 import simplicial as SR
+np.random.seed(321)
 
-H = xgi.load_xgi_data('contact-high-school')
-## build edge list - remove duplicates and keep size < 12 only
-E = list(set([tuple(sorted(e)) for e in H.edges.members() if len(e)<=11 and len(e)>=2])) ## keep only edges of size 2 to 11
-E = [set(e) for e in E]
+H = xgi.load_xgi_data('contact-high-school').cleanup()
+E = [set(sorted(e)) for e in H.edges.members() if len(e)<=11 and len(e)>=2]
 
 ## Simplicial ratio
 S = SR.Simplicial(E)
@@ -40,29 +39,23 @@ With *hospital-lyon*, there are 1,107 edges of size 2 but only 75 nodes, so the 
 
 ```
 Results for contact-primary-school
-n = 242 
-m = 12704 
-mean edge size = 2.42
+number of edges: 12704
 SF:  0.85 
 ES:  0.88 
 FES: 0.94
 SR: 2.68
 
 Results for contact-high-school
-n = 327 
-m = 7818 
-mean edge size = 2.33
+number of edges: 7818
 SF:  0.81 
 ES:  0.91 
 FES: 0.92
-SR: 6.52
+SR: 6.70
 
 Results for hospital-lyon
-n = 75 
-m = 1824 
-mean edge size = 2.43
+number of edges: 1824
 SF:  0.91 
 ES:  0.94 
 FES: 0.97
-SR: 0.98
+SR: 0.95
 ```
