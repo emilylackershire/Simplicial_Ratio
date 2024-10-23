@@ -16,5 +16,39 @@ The code to compute those new measure can be found in the **simplicial_ratio.py*
 ### Example
 
 ```
-code here
+code here - TBD
+```
+
+Looking at the 3 **contact hypergraphs** used in the papers cited above, we see that the measures reveal different aspects of the data. 
+With the simplicial fraction (SF), edit simpliciality (ES) and face edit simpliciality (FES), all values are high, which indicates that all 3 hypergraphs are close to being simplicial complexes.
+With the simplicilaity ratio (SR) however, the interpretation is different. The *hospital-lyon* is not surprisingly simplicial while the other two datasets, in particular the *contact-high-school*, are highly ``surprisingly'' simplicial.
+With *hospital-lyon*, there are 1,107 edges of size 2 but only 75 nodes, so the density of 2-edges is very large, and we can expect that a lot of those are subsets of the larger (mainly size 3) edges, thus the lower SR.
+
+```
+Results for contact-primary-school
+n = 242 
+m = 12704 
+mean edge size = 2.42
+SF:  0.85 
+ES:  0.88 
+FES: 0.94
+SR: 2.68
+
+Results for contact-high-school
+n = 327 
+m = 7818 
+mean edge size = 2.33
+SF:  0.81 
+ES:  0.91 
+FES: 0.92
+SR: 6.52
+
+Results for hospital-lyon
+n = 75 
+m = 1824 
+mean edge size = 2.43
+SF:  0.91 
+ES:  0.94 
+FES: 0.97
+SR: 0.98
 ```
