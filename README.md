@@ -27,8 +27,8 @@ import xgi
 import simplicial as SR
 np.random.seed(321)
 
-H = xgi.load_xgi_data('contact-high-school').cleanup()
-E = [set(sorted(e)) for e in H.edges.members() if len(e)<=11 and len(e)>=2]
+H = xgi.load_xgi_data('contact-high-school', max_order=10).cleanup(connected=False)
+E = H.edges.members()
 
 ## Simplicial ratio
 S = SR.Simplicial(E)
