@@ -25,7 +25,7 @@ datasets = [
     "tags-ask-ubuntu",
 ]
 
-def generate_hypergraph(nodes, edges_of_size, degree_seq):
+def generate_simplicial_hypergraph(nodes, edges_of_size, degree_seq):
     #edges = hm.chung_lu(nodes, edges_of_size, degree_seq, multisets=True)
     edges = hm.simplicial_chung_lu(degree_seq, edges_of_size, 0.5, multisets=True)
     H = xgi.Hypergraph(edges)
@@ -57,7 +57,7 @@ def run_multiple_SIR_with_errorbands(
 
     for i in range(num_graphs):
         print(f"Simulation {i+1}/{num_graphs}")
-        H = generate_hypergraph(num_nodes, edges, degree_seq)
+        H = generate_simplicial_hypergraph(num_nodes, edges, degree_seq)
 
         tau = {k: (0.1/k) for k in xgi.unique_edge_sizes(H)}
         t, S, I, R = hc.discrete_SIR(H, tau, gamma=gamma, rho=rho, tmin=tmin, tmax=tmax, dt=dt)
@@ -100,13 +100,12 @@ def run_multiple_SIR_with_errorbands(
     ax.plot(t_vals, R_mean, color = colors[2], label="R (mean)")
     ax.fill_between(t_vals, R_mean - R_std, R_mean + R_std, color = colors[2], alpha=0.3)
     ax.set_ylabel("Fraction of Population")
-    ax.set_title(f"SIR on Generated Code Error Bands")
+    ax.set_title(f"SIR on simplicial chung lu Generated Code Error Bands")
     ax.legend()
     ax.grid(True)
     fig.tight_layout()
 
     return fig, ax
-
 
 def SIR_original_graph(
     dataset,
@@ -137,7 +136,6 @@ def SIR_original_graph(
     fig.tight_layout()
     return fig, ax
     
-# Example usage:
 if __name__ == "__main__":
     dataset = datasets[int(sys.argv[1])]
     H = xgi.load_xgi_data(dataset)
