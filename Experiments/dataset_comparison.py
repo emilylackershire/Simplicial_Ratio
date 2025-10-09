@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 import time
 import random
 import Hypergraph_Models as hm
+from termcolor import colored
+from trie import Trie
+from utilities import count_subfaces, max_number_of_subfaces, missing_subfaces
 
 datasets = [
     "contact-primary-school",
@@ -24,6 +27,66 @@ datasets = [
     "congress-bills",
     "tags-ask-ubuntu",
 ]
+
+def new_edit_simpliciality(H, min_size=2, exclude_min_size=True):
+    """Computes the simplicial edit distance.
+
+    The number of edges needed to be added
+    to a hypergraph to make it a simplicial complex.
+
+    Parameters
+    ----------
+    H : xgi.Hypergraph
+        The hypergraph of interest
+    min_size: int, default: 1
+        The minimum hyperedge size to include when
+        calculating whether a hyperedge is a simplex
+        by counting subfaces.
+
+    Returns
+    -------
+    int
+        The edit simpliciality
+    """
+    edges = H.edges.filterby("size", min_size, "geq").members()
+    max_edges = H.edges.maximal().filterby("size", min_size, "geq").members()
+    t = Trie()
+    t.build_trie(edges)
+
+    maxH = xgi.Hypergraph(
+        H.edges.maximal()
+        .filterby("size", min_size + exclude_min_size, "geq")
+        .members(dtype=dict)
+    )
+    if not maxH.edges:
+        return np.nan
+
+    ms = 0
+    for id1, e in maxH.edges.members(dtype=dict).items():
+        redundant_missing_faces = set()
+        for id2 in maxH.edges.neighbors(id1):
+            if id2 < id1:
+                c = maxH._edge[id2].intersection(e)
+                if len(c) >= min_size:
+                    redundant_missing_faces.update(missing_subfaces(t, c, min_size))
+
+                    # we don't have to worry about the intersection being a max face
+                    # because a) there are no multiedges and b) these are all maximal
+                    # faces so no inclusions.
+                    if not t.search(c):
+                        redundant_missing_faces.add(frozenset(c))
+
+        nm = max_number_of_subfaces(min_size, len(e))
+        nf = count_subfaces(t, e, min_size)
+        rmf = len(redundant_missing_faces)
+        ms += nm - nf - rmf
+
+    try:
+        s = len(edges)
+        return (s - len(max_edges)) / (ms + s - len(max_edges))
+    except ZeroDivisionError:
+        return np.nan
+
 
 def generate_simplicial_hypergraph(nodes, edges_of_size, degree_seq):
     #edges = hm.chung_lu(nodes, edges_of_size, degree_seq, multisets=True)
@@ -40,6 +103,7 @@ def edge_size_distribution(H):
 
 
 def run_multiple_SIR_with_errorbands(
+    dataset_index,
     num_nodes, 
     edges, 
     degree_seq,
@@ -54,6 +118,17 @@ def run_multiple_SIR_with_errorbands(
 ):
     S_all, I_all, R_all = [], [], []
     t_vals = None  # to store time vector from first run
+
+    #
+    #total statistics for the table
+    avg_ES = 0
+    avg_nodes = 0
+    avg_edges = 0
+    avg_max_he = 0
+    avg_clust_coef = 0
+    avg_degree = 0
+    avg_degree_assot = 0
+    #
 
     for i in range(num_graphs):
         print(f"Simulation {i+1}/{num_graphs}")
@@ -72,6 +147,19 @@ def run_multiple_SIR_with_errorbands(
 
         if t_vals is None:
             t_vals = t[:min_len]
+
+        avg_ES += new_edit_simpliciality(H)
+        avg_nodes += H.num_nodes
+        avg_edges += H.num_edges
+        avg_max_he += 0
+        avg_clust_coef += sum(list(xgi.clustering_coefficient(H).values())) / H.num_nodes
+        deg_list = list(xgi.degree_counts(H))
+        degrees = []
+        for degree_val, count in enumerate(deg_list):
+            degree = count * degree_val
+            degrees.append(degree)
+        avg_degree += sum(degrees) / H.num_nodes
+        avg_degree_assot += xgi.degree_assortativity(H)
 
     min_len = min(len(arr) for arr in S_all)  # Find the minimum time series length
 
@@ -105,6 +193,30 @@ def run_multiple_SIR_with_errorbands(
     ax.grid(True)
     fig.tight_layout()
 
+    total_ES = avg_ES / num_graphs
+    total_nodes = avg_nodes / num_graphs
+    total_edges = avg_edges / num_graphs
+    total_max_he = avg_max_he / num_graphs
+    total_clust_coef = avg_clust_coef / num_graphs
+    total_degree = avg_degree / num_graphs
+    total_degree_assot = avg_degree_assot / num_graphs
+
+    print(colored("ES: " + str(total_ES) + "\n" + 
+            "Average nodes: " + str(total_nodes) + "\n" +
+            "Average edges: " + str(total_edges) + "\n" +
+            "Average max hyperedge size: " + str(total_max_he) + "\n" +
+            "Average clustering coefficient: " + str(total_clust_coef) + "\n" +
+            "Average degree: " + str(total_degree) + "\n" +
+            "Average degree assortativity: " + str(total_degree_assot) + "\n", "green"))
+    
+    print(colored( "chung lu " + str(dataset_index) +  "& " +
+                    str(avg_ES) + "&" +
+                    str(avg_nodes) + "&" +
+                    str(avg_edges) + "&" +
+                    str(avg_max_he) + "&" +
+                    str(avg_clust_coef) + "&" +
+                    str(avg_degree) + "&" +
+                    str(avg_degree_assot) + "\\\\", "red"))
     return fig, ax
 
 def SIR_original_graph(
@@ -136,6 +248,8 @@ def SIR_original_graph(
     fig.tight_layout()
     return fig, ax
     
+
+
 if __name__ == "__main__":
     dataset = datasets[int(sys.argv[1])]
     H = xgi.load_xgi_data(dataset)
@@ -148,7 +262,7 @@ if __name__ == "__main__":
 
     fig, axes = plt.subplots(1, 2, figsize=(16, 6))  # 1 row, 2 columns
 
-    run_multiple_SIR_with_errorbands(num_nodes, edges, degree_seq, gamma, colors, num_graphs, ax=axes[0])
+    run_multiple_SIR_with_errorbands(int(sys.argv[1]), num_nodes, edges, degree_seq, gamma, colors, num_graphs, ax=axes[0])
     SIR_original_graph(dataset, gamma, colors, ax=axes[1])
 
     fig.suptitle("SIR with Error Bands, Dataset: " + dataset)
