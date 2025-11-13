@@ -151,13 +151,18 @@ def run_multiple_SIR_with_errorbands(
         avg_ES += new_edit_simpliciality(H)
         avg_nodes += H.num_nodes
         avg_edges += H.num_edges
-        avg_max_he += 0
+        avg_max_he += max(len(H.edges.members(e)) for e in H.edges)
         avg_clust_coef += sum(list(xgi.clustering_coefficient(H).values())) / H.num_nodes
+        #to get avg degree, we make a deg_list that takes the count of degrees per each node
         deg_list = list(xgi.degree_counts(H))
         degrees = []
+        #iterates through deg_list with enumerate, which tells us the degree val and number of nodes with that degree
         for degree_val, count in enumerate(deg_list):
+            #multiplies count of degrees with current val to get sum
             degree = count * degree_val
+            #appends to degrees array
             degrees.append(degree)
+        #sums list and divides by number of nodes to get average
         avg_degree += sum(degrees) / H.num_nodes
         avg_degree_assot += xgi.degree_assortativity(H)
 
@@ -193,13 +198,13 @@ def run_multiple_SIR_with_errorbands(
     ax.grid(True)
     fig.tight_layout()
 
-    total_ES = avg_ES / num_graphs
-    total_nodes = avg_nodes / num_graphs
-    total_edges = avg_edges / num_graphs
-    total_max_he = avg_max_he / num_graphs
-    total_clust_coef = avg_clust_coef / num_graphs
-    total_degree = avg_degree / num_graphs
-    total_degree_assot = avg_degree_assot / num_graphs
+    total_ES = round((avg_ES / num_graphs), 5)
+    total_nodes =  round((avg_nodes / num_graphs), 5)
+    total_edges =  round((avg_edges / num_graphs), 5)
+    total_max_he =  round((avg_max_he / num_graphs), 5)
+    total_clust_coef =  round((avg_clust_coef / num_graphs), 5)
+    total_degree =  round((avg_degree / num_graphs), 5)
+    total_degree_assot =  round((avg_degree_assot / num_graphs), 5)
 
     print(colored("ES: " + str(total_ES) + "\n" + 
             "Average nodes: " + str(total_nodes) + "\n" +
@@ -210,13 +215,13 @@ def run_multiple_SIR_with_errorbands(
             "Average degree assortativity: " + str(total_degree_assot) + "\n", "green"))
     
     print(colored( "chung lu " + str(dataset_index) +  "& " +
-                    str(avg_ES) + "&" +
-                    str(avg_nodes) + "&" +
-                    str(avg_edges) + "&" +
-                    str(avg_max_he) + "&" +
-                    str(avg_clust_coef) + "&" +
-                    str(avg_degree) + "&" +
-                    str(avg_degree_assot) + "\\\\", "red"))
+                    str(total_ES) + "&" +
+                    str(total_nodes) + "&" +
+                    str(total_edges) + "&" +
+                    str(total_max_he) + "&" +
+                    str(total_clust_coef) + "&" +
+                    str(total_degree) + "&" +
+                    str(total_degree_assot) + "\\\\", "red"))
     return fig, ax
 
 def SIR_original_graph(
@@ -253,16 +258,52 @@ def SIR_original_graph(
 if __name__ == "__main__":
     dataset = datasets[int(sys.argv[1])]
     H = xgi.load_xgi_data(dataset)
-    num_nodes = H.num_nodes
-    edges = edge_size_distribution(H)
-    degree_seq = [H.degree(n) for n in H.nodes]
+    #update data so we take the modified version, with no duplicate edges, no directed edges, and only looking at the largest connected component
+    H_cleaned = H.cleanup(multiedges=False, singletons=False, isolates=False, relabel=True, in_place=False)
+    cleaned_ES = round((new_edit_simpliciality(H_cleaned)), 5)
+    num_nodes = H_cleaned.num_nodes
+    cleaned_edges = edge_size_distribution(H_cleaned)
+    total_edges = H_cleaned.num_edges
+    degree_seq = [H_cleaned.degree(n) for n in H_cleaned.nodes]
     gamma = 0.05
     colors = ["#00B388","#DA291C", "#418FDF"]
     num_graphs = 10  # Number of graphs to simulate
 
+    max_he = round((max(len(H_cleaned.edges.members(e)) for e in H_cleaned.edges)), 5)
+    clust_coef = round((sum(list(xgi.clustering_coefficient(H_cleaned).values())) / H_cleaned.num_nodes), 5)
+    #to get avg degree, we make a deg_list that takes the count of degrees per each node
+    deg_list = list(xgi.degree_counts(H_cleaned))
+    degrees = []
+    #iterates through deg_list with enumerate, which tells us the degree val and number of nodes with that degree
+    for degree_val, count in enumerate(deg_list):
+        #multiplies count of degrees with current val to get sum
+        degree = count * degree_val
+        #appends to degrees array
+        degrees.append(degree)
+    #sums list and divides by number of nodes to get average
+    avg_degree = round((sum(degrees) / H_cleaned.num_nodes), 5)
+    degree_assot = round((xgi.degree_assortativity(H_cleaned)),5)
+
+    print(colored("ES: " + str(cleaned_ES) + "\n" + 
+            "Average nodes: " + str(num_nodes) + "\n" +
+            "Average edges: " + str(total_edges) + "\n" +
+            "Average max hyperedge size: " + str(max_he) + "\n" +
+            "Average clustering coefficient: " + str(clust_coef) + "\n" +
+            "Average degree: " + str(avg_degree) + "\n" +
+            "Average degree assortativity: " + str(degree_assot) + "\n", "green"))
+    
+    print(colored( "real " + str(dataset) +  "& " +
+                    str(cleaned_ES) + "&" +
+                    str(num_nodes) + "&" +
+                    str(total_edges) + "&" +
+                    str(max_he) + "&" +
+                    str(clust_coef) + "&" +
+                    str(avg_degree) + "&" +
+                    str(degree_assot) + "\\\\", "blue"))
+
     fig, axes = plt.subplots(1, 2, figsize=(16, 6))  # 1 row, 2 columns
 
-    run_multiple_SIR_with_errorbands(int(sys.argv[1]), num_nodes, edges, degree_seq, gamma, colors, num_graphs, ax=axes[0])
+    run_multiple_SIR_with_errorbands(int(sys.argv[1]), num_nodes, cleaned_edges, degree_seq, gamma, colors, num_graphs, ax=axes[0])
     SIR_original_graph(dataset, gamma, colors, ax=axes[1])
 
     fig.suptitle("SIR with Error Bands, Dataset: " + dataset)
